@@ -1,0 +1,83 @@
+import mongoose from 'mongoose';
+import { Request, Response } from 'express';
+import { IUserRequest } from '../types';
+import User from '../models/user';
+import NotFoundError from '../errors/not-found-err';
+import { BAD_REQUEST, DEFAULT_ERROR } from '../utils/constants';
+
+const getAllUsers = (req: Request, res: Response) => {
+  User.find({})
+    .then((users) => {
+      if (!users) { throw new NotFoundError('Переданы некорректные данные при создании пользователя'); }
+      res.send(users);
+    })
+    .catch(() => res.status(DEFAULT_ERROR).send({ message: 'На сервере произошла ошибка' }));
+};
+
+const getUserById = (req: IUserRequest, res: Response) => {
+  User.findById(req.params.userId)
+    .then((user) => {
+      if (!user) { throw new NotFoundError('Пользователь по указанному _id не найден'); }
+      res.send(user);
+    })
+    .catch(() => res.status(DEFAULT_ERROR).send({ message: 'На сервере произошла ошибка' }));
+};
+
+const createUser = (req: Request, res: Response) => {
+  const { name, about, avatar } = req.body;
+
+  User.create({ name, about, avatar })
+    .then((user) => res.send(user))
+    .catch((err) => {
+      if (err instanceof mongoose.Error.ValidationError) {
+        return res.status(BAD_REQUEST).send({ message: 'Переданы некорректные данные при создании пользователя' });
+      }
+      return res.status(DEFAULT_ERROR).send({ message: 'На сервере произошла ошибка' });
+    });
+};
+
+const editProfile = (req: IUserRequest, res: Response) => { //
+  const { name, about } = req.body;
+  const id = req.user?._id;
+
+  User.findByIdAndUpdate(
+    id,
+    { name, about },
+    { new: true, runValidators: true, upsert: true },
+  )
+    .then((user) => {
+      if (!user) { throw new NotFoundError('Пользователь с указанным _id не найден'); }
+      res.send(user);
+    })
+    .catch((err) => {
+      if (err instanceof mongoose.Error.ValidationError) {
+        return res.status(BAD_REQUEST).send({ message: 'Переданы некорректные данные при обновлении профиля' });
+      }
+      return res.status(DEFAULT_ERROR).send({ message: 'На сервере произошла ошибка' });
+    });
+};
+
+const editAvatar = (req: IUserRequest, res: Response) => { //
+  const { avatar } = req.body;
+  const id = req.user?._id;
+
+  User.findByIdAndUpdate(
+    id,
+    { avatar },
+    { new: true, runValidators: true, upsert: true },
+  )
+    .then((user) => {
+      if (!user) { throw new NotFoundError('Пользователь с указанным _id не найден'); }
+      res.send(user);
+    })
+    .catch((err) => {
+      if (err instanceof mongoose.Error.ValidationError) {
+        return res.status(BAD_REQUEST).send({ message: 'Переданы некорректные данные при обновлении аватара' });
+      }
+      return res.status(DEFAULT_ERROR).send({ message: 'На сервере произошла ошибка' });
+    });
+};
+
+export {
+  createUser, getAllUsers, getUserById, editProfile, editAvatar,
+};
