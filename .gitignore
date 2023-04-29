@@ -14,5 +14,7 @@ node_modules
 .idea
 .vscode
 
-# Typescript build
+# Typescript build result
 dist
+
+.env
