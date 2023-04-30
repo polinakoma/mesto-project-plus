@@ -24,6 +24,9 @@ app.use((req: IUserRequest, _res, next) => {
 
 app.use('/users', userRouter);
 app.use('/cards', cardRouter);
+app.get('*', (req: Request, res: Response) => {
+  res.status(404).send('Страница не найдена');
+});
 
 app.use(errors()); // обработчик ошибок celebrate
 
