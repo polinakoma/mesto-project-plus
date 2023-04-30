@@ -17,7 +17,12 @@ const getUserById = (req: IUserRequest, res: Response) => {
       if (!user) { throw new NotFoundError('Пользователь по указанному _id не найден'); }
       res.send(user);
     })
-    .catch(() => res.status(INTERNAL_SERVER_ERROR).send({ message: 'На сервере произошла ошибка' }));
+    .catch((err) => {
+      if (err instanceof mongoose.Error.CastError) {
+        return res.status(BAD_REQUEST).send({ message: 'Переданы некорректный _id пользователя' });
+      }
+      return res.status(INTERNAL_SERVER_ERROR).send({ message: 'На сервере произошла ошибка' });
+    });
 };
 
 const createUser = (req: Request, res: Response) => {
@@ -50,6 +55,9 @@ const editProfile = (req: IUserRequest, res: Response) => { //
       if (err instanceof mongoose.Error.ValidationError) {
         return res.status(BAD_REQUEST).send({ message: 'Переданы некорректные данные при обновлении профиля' });
       }
+      if (err instanceof mongoose.Error.CastError) {
+        return res.status(BAD_REQUEST).send({ message: 'Переданы некорректные данные при обновлении профиля' });
+      }
       return res.status(INTERNAL_SERVER_ERROR).send({ message: 'На сервере произошла ошибка' });
     });
 };
@@ -70,6 +78,9 @@ const editAvatar = (req: IUserRequest, res: Response) => { //
     .catch((err) => {
       if (err instanceof mongoose.Error.ValidationError) {
         return res.status(BAD_REQUEST).send({ message: 'Переданы некорректные данные при обновлении аватара' });
+      }
+      if (err instanceof mongoose.Error.CastError) {
+        return res.status(BAD_REQUEST).send({ message: 'Переданы некорректные данные при обновлении профиля' });
       }
       return res.status(INTERNAL_SERVER_ERROR).send({ message: 'На сервере произошла ошибка' });
     });
