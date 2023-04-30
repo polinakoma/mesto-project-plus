@@ -13,9 +13,6 @@ app.use(express.urlencoded({ extended: true }));
 
 mongoose.connect('mongodb://localhost:27017/mestodb');
 
-app.use('/', userRouter); // роуты юзера
-app.use('/', cardRouter); // роуты карточки
-
 // мидлвар добавляет в каждый запрос объект user
 app.use((req: IUserRequest, _res, next) => {
   req.user = {
@@ -24,6 +21,9 @@ app.use((req: IUserRequest, _res, next) => {
 
   next();
 });
+
+app.use('/users', userRouter);
+app.use('/cards', cardRouter);
 
 app.use(errors()); // обработчик ошибок celebrate
 

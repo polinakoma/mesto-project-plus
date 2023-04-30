@@ -3,29 +3,28 @@ import { Request, Response } from 'express';
 import { IUserRequest } from '../types';
 import Card from '../models/card';
 import NotFoundError from '../errors/not-found-err';
-import { BAD_REQUEST, NOT_FOUND, DEFAULT_ERROR } from '../utils/constants';
+import {
+  BAD_REQUEST, NOT_FOUND, INTERNAL_SERVER_ERROR, CREATED,
+} from '../utils/constants';
 
 const createCard = async (req: IUserRequest, res: Response) => {
   const { name, link } = req.body;
   const id = req.user?._id;
 
   Card.create({ name, link, owner: id })
-    .then((card) => res.send(card))
+    .then((card) => res.status(CREATED).send(card))
     .catch((err) => {
       if (err instanceof mongoose.Error.ValidationError) {
         return res.status(BAD_REQUEST).send({ message: 'Переданы некорректные данные при создании карточки' });
       }
-      return res.status(DEFAULT_ERROR).send({ message: 'На сервере произошла ошибка' });
+      return res.status(INTERNAL_SERVER_ERROR).send({ message: 'На сервере произошла ошибка' });
     });
 };
 
 const getAllCards = (req: Request, res: Response) => {
   Card.find({})
-    .then((cards) => {
-      if (!cards) { throw new NotFoundError('Запрашиваемые карточки не найдены'); }
-      res.send(cards);
-    })
-    .catch(() => res.status(DEFAULT_ERROR).send({ message: 'На сервере произошла ошибка' }));
+    .then((cards) => res.send(cards))
+    .catch(() => res.status(INTERNAL_SERVER_ERROR).send({ message: 'На сервере произошла ошибка' }));
 };
 
 const deleteCardById = (req: Request, res: Response) => {
@@ -50,7 +49,7 @@ const putLike = (req: IUserRequest, res: Response) => {
       if (err instanceof mongoose.Error.ValidationError) {
         return res.status(BAD_REQUEST).send({ message: 'Переданы некорректные данные для постановки/снятии лайка' });
       }
-      return res.status(DEFAULT_ERROR).send({ message: 'На сервере произошла ошибка' });
+      return res.status(INTERNAL_SERVER_ERROR).send({ message: 'На сервере произошла ошибка' });
     });
 };
 
@@ -70,7 +69,7 @@ const deleteLike = (req: IUserRequest, res: Response) => {
       if (err instanceof mongoose.Error.ValidationError) {
         return res.status(BAD_REQUEST).send({ message: 'Переданы некорректные данные для постановки/снятии лайка' });
       }
-      return res.status(DEFAULT_ERROR).send({ message: 'На сервере произошла ошибка' });
+      return res.status(INTERNAL_SERVER_ERROR).send({ message: 'На сервере произошла ошибка' });
     });
 };
 

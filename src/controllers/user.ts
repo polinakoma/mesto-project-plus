@@ -3,15 +3,12 @@ import { Request, Response } from 'express';
 import { IUserRequest } from '../types';
 import User from '../models/user';
 import NotFoundError from '../errors/not-found-err';
-import { BAD_REQUEST, DEFAULT_ERROR } from '../utils/constants';
+import { BAD_REQUEST, INTERNAL_SERVER_ERROR, CREATED } from '../utils/constants';
 
 const getAllUsers = (req: Request, res: Response) => {
   User.find({})
-    .then((users) => {
-      if (!users) { throw new NotFoundError('Переданы некорректные данные при создании пользователя'); }
-      res.send(users);
-    })
-    .catch(() => res.status(DEFAULT_ERROR).send({ message: 'На сервере произошла ошибка' }));
+    .then((users) => res.send(users))
+    .catch(() => res.status(INTERNAL_SERVER_ERROR).send({ message: 'На сервере произошла ошибка' }));
 };
 
 const getUserById = (req: IUserRequest, res: Response) => {
@@ -20,19 +17,19 @@ const getUserById = (req: IUserRequest, res: Response) => {
       if (!user) { throw new NotFoundError('Пользователь по указанному _id не найден'); }
       res.send(user);
     })
-    .catch(() => res.status(DEFAULT_ERROR).send({ message: 'На сервере произошла ошибка' }));
+    .catch(() => res.status(INTERNAL_SERVER_ERROR).send({ message: 'На сервере произошла ошибка' }));
 };
 
 const createUser = (req: Request, res: Response) => {
   const { name, about, avatar } = req.body;
 
   User.create({ name, about, avatar })
-    .then((user) => res.send(user))
+    .then((user) => res.status(CREATED).send(user))
     .catch((err) => {
       if (err instanceof mongoose.Error.ValidationError) {
         return res.status(BAD_REQUEST).send({ message: 'Переданы некорректные данные при создании пользователя' });
       }
-      return res.status(DEFAULT_ERROR).send({ message: 'На сервере произошла ошибка' });
+      return res.status(INTERNAL_SERVER_ERROR).send({ message: 'На сервере произошла ошибка' });
     });
 };
 
@@ -43,7 +40,7 @@ const editProfile = (req: IUserRequest, res: Response) => { //
   User.findByIdAndUpdate(
     id,
     { name, about },
-    { new: true, runValidators: true, upsert: true },
+    { new: true, runValidators: true, upsert: false },
   )
     .then((user) => {
       if (!user) { throw new NotFoundError('Пользователь с указанным _id не найден'); }
@@ -53,7 +50,7 @@ const editProfile = (req: IUserRequest, res: Response) => { //
       if (err instanceof mongoose.Error.ValidationError) {
         return res.status(BAD_REQUEST).send({ message: 'Переданы некорректные данные при обновлении профиля' });
       }
-      return res.status(DEFAULT_ERROR).send({ message: 'На сервере произошла ошибка' });
+      return res.status(INTERNAL_SERVER_ERROR).send({ message: 'На сервере произошла ошибка' });
     });
 };
 
@@ -64,7 +61,7 @@ const editAvatar = (req: IUserRequest, res: Response) => { //
   User.findByIdAndUpdate(
     id,
     { avatar },
-    { new: true, runValidators: true, upsert: true },
+    { new: true, runValidators: true, upsert: false },
   )
     .then((user) => {
       if (!user) { throw new NotFoundError('Пользователь с указанным _id не найден'); }
@@ -74,7 +71,7 @@ const editAvatar = (req: IUserRequest, res: Response) => { //
       if (err instanceof mongoose.Error.ValidationError) {
         return res.status(BAD_REQUEST).send({ message: 'Переданы некорректные данные при обновлении аватара' });
       }
-      return res.status(DEFAULT_ERROR).send({ message: 'На сервере произошла ошибка' });
+      return res.status(INTERNAL_SERVER_ERROR).send({ message: 'На сервере произошла ошибка' });
     });
 };
 
