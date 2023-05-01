@@ -4,6 +4,7 @@ import { errors } from 'celebrate';
 import { IUserRequest } from './types';
 import userRouter from './routes/userRouter';
 import cardRouter from './routes/cardRouter';
+import { NOT_FOUND } from './utils/constants';
 
 const { PORT = 3000 } = process.env;
 
@@ -25,7 +26,7 @@ app.use((req: IUserRequest, _res, next) => {
 app.use('/users', userRouter);
 app.use('/cards', cardRouter);
 app.get('*', (req: Request, res: Response) => {
-  res.status(404).send('Страница не найдена');
+  res.status(NOT_FOUND).send('Страница не найдена');
 });
 
 app.use(errors()); // обработчик ошибок celebrate

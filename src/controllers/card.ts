@@ -57,9 +57,6 @@ const putLike = (req: IUserRequest, res: Response) => {
       if (err instanceof mongoose.Error.CastError) {
         return res.status(BAD_REQUEST).send({ message: 'Переданы некорректные данные для постановки/снятии лайка' });
       }
-      if (err instanceof mongoose.Error.ValidationError) {
-        return res.status(BAD_REQUEST).send({ message: 'Переданы некорректные данные для постановки/снятии лайка' });
-      }
       return res.status(INTERNAL_SERVER_ERROR).send({ message: 'На сервере произошла ошибка' });
     });
 };
@@ -79,9 +76,6 @@ const deleteLike = (req: IUserRequest, res: Response) => {
     })
     .catch((err) => {
       if (err instanceof mongoose.Error.CastError) {
-        return res.status(BAD_REQUEST).send({ message: 'Переданы некорректные данные для постановки/снятии лайка' });
-      }
-      if (err instanceof mongoose.Error.ValidationError) {
         return res.status(BAD_REQUEST).send({ message: 'Переданы некорректные данные для постановки/снятии лайка' });
       }
       return res.status(INTERNAL_SERVER_ERROR).send({ message: 'На сервере произошла ошибка' });
