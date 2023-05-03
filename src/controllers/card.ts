@@ -1,13 +1,15 @@
 import mongoose from 'mongoose';
 import { Request, Response } from 'express';
-import { IUserRequest } from '../types';
+import { IUserIdRequest, IUserJWTRequest } from '../types';
 import Card from '../models/card';
 import NotFoundError from '../errors/not-found-err';
-import { BAD_REQUEST, INTERNAL_SERVER_ERROR, CREATED } from '../utils/constants';
+import {
+  BAD_REQUEST, INTERNAL_SERVER_ERROR, CREATED, FORBIDDEN,
+} from '../utils/constants';
 
-const createCard = async (req: IUserRequest, res: Response) => {
+const createCard = async (req: IUserJWTRequest, res: Response) => {
   const { name, link } = req.body;
-  const id = req.user?._id;
+  const id = req.user as IUserIdRequest;
 
   Card.create({ name, link, owner: id })
     .then((card) => res.status(CREATED).send(card))
@@ -26,10 +28,15 @@ const getAllCards = (req: Request, res: Response) => {
     .catch(() => res.status(INTERNAL_SERVER_ERROR).send({ message: 'На сервере произошла ошибка' }));
 };
 
-const deleteCardById = (req: Request, res: Response) => {
+const deleteCardById = (req: IUserJWTRequest, res: Response) => {
+  const id = req.user as IUserIdRequest;
+
   Card.findByIdAndRemove(req.params.cardId)
     .then((card) => {
       if (!card) { throw new NotFoundError('Передан несуществующий _id карточки'); }
+      if (String(card.owner) !== String(id)) {
+        res.status(FORBIDDEN).send({ message: 'Вы можете удалить только свои карточки' });
+      }
       res.send(card);
     })
     .catch((err) => {
@@ -40,8 +47,8 @@ const deleteCardById = (req: Request, res: Response) => {
     });
 };
 
-const putLike = (req: IUserRequest, res: Response) => {
-  const id = req.user?._id;
+const putLike = (req: IUserJWTRequest, res: Response) => {
+  const id = req.user as IUserIdRequest;
 
   Card.findByIdAndUpdate(
     req.params.cardId,
@@ -61,8 +68,8 @@ const putLike = (req: IUserRequest, res: Response) => {
     });
 };
 
-const deleteLike = (req: IUserRequest, res: Response) => {
-  const id = req.user?._id;
+const deleteLike = (req: IUserJWTRequest, res: Response) => {
+  const id = req.user as IUserIdRequest;
 
   Card.findByIdAndUpdate(
     req.params.cardId,

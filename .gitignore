@@ -17,4 +17,5 @@ node_modules
 # Typescript build result
 dist
 
+# secret key
 .env
