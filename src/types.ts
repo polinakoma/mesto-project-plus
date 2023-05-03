@@ -1,8 +1,11 @@
 import mongoose from 'mongoose';
 import { Request } from 'express';
+import { JwtPayload } from 'jsonwebtoken';
 
 export interface IUser {
   name: string,
+  email: string,
+  password: string,
   about: string,
   avatar: string,
 }
@@ -15,8 +18,10 @@ export interface ICard {
   createdAt: Date,
 }
 
-export interface IUserRequest extends Request {
-  user?: {
-    _id: string;
-  }
+export interface IUserIdRequest extends Request {
+  _id: mongoose.Schema.Types.ObjectId;
+}
+
+export interface IUserJWTRequest extends Request {
+  user?: string | JwtPayload;
 }
