@@ -1,6 +1,6 @@
 import { NextFunction, Response } from 'express';
 import jwt from 'jsonwebtoken';
-import { UNAUTHORIZED } from '../utils/constants';
+import { UNAUTHORIZED, randomString } from '../utils/constants';
 import { IUserJWTRequest } from '../types';
 
 // eslint-disable-next-line consistent-return
@@ -10,11 +10,11 @@ export default (req: IUserJWTRequest, res: Response, next: NextFunction) => {
   if (!cookie) {
     return res.status(UNAUTHORIZED).send('Необходима авторизация');
   }
-  const token = cookie.replace('Bearer ', '');
+
   let payload;
 
   try {
-    payload = jwt.verify(token, 'some-secret-key');
+    payload = jwt.verify(cookie, randomString);
   } catch {
     return res.status(UNAUTHORIZED).send({ message: 'Необходима авторизация' });
   }
