@@ -12,8 +12,6 @@ import { errorLogger, requestLogger } from './middlewares/logger';
 const { PORT = 3000 } = process.env;
 
 // GET /users/me — не возвращает информацию о текущем пользователе.
-// В контроллере createUser почта и хеш пароля записываются в базу;
-// Пользователь не может редактировать чужой профиль и менять чужой аватар;
 
 const app = express();
 
