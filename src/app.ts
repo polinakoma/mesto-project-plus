@@ -12,10 +12,6 @@ import NotFoundError from './errors/not-found';
 
 const { PORT = 3000 } = process.env;
 
-// GET /users/me — не возвращает информацию о текущем пользователе.
-
-// проверить как валидируется урл с кастомной валидацией
-
 const app = express();
 
 app.use(cookieParser());
