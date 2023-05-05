@@ -1,53 +1,56 @@
 import mongoose from 'mongoose';
-import { Request, Response } from 'express';
+import { NextFunction, Request, Response } from 'express';
 import { IUserIdRequest, IUserJWTRequest } from '../types';
 import Card from '../models/card';
-import NotFoundError from '../errors/not-found-err';
-import {
-  BAD_REQUEST, INTERNAL_SERVER_ERROR, CREATED, FORBIDDEN,
-} from '../utils/constants';
+import NotFoundError from '../errors/not-found';
+import BadRequestError from '../errors/bad-request';
+import ForbiddenError from '../errors/forbidden';
+import { CREATED } from '../utils/constants';
 
-const createCard = async (req: IUserJWTRequest, res: Response) => {
+const createCard = async (req: IUserJWTRequest, res: Response, next: NextFunction) => {
   const { name, link } = req.body;
   const id = req.user as IUserIdRequest;
 
   Card.create({ name, link, owner: id })
     .then((card) => res.status(CREATED).send(card))
     .catch((err) => {
-      if (err instanceof mongoose.Error.ValidationError) {
-        return res.status(BAD_REQUEST).send({ message: 'Переданы некорректные данные при создании карточки' });
+      if (err instanceof mongoose.Error.CastError) {
+        return next(new BadRequestError('Переданы некорректные данные при создании карточки'));
       }
-      return res.status(INTERNAL_SERVER_ERROR).send({ message: 'На сервере произошла ошибка' });
+      return next(err);
     });
 };
 
-const getAllCards = (req: Request, res: Response) => {
+const getAllCards = (req: Request, res: Response, next: NextFunction) => {
   Card.find({})
     .populate(['likes', 'owner'])
     .then((cards) => res.send(cards))
-    .catch(() => res.status(INTERNAL_SERVER_ERROR).send({ message: 'На сервере произошла ошибка' }));
+    .catch((err) => next(err));
 };
 
-const deleteCardById = (req: IUserJWTRequest, res: Response) => {
+const deleteCardById = (req: IUserJWTRequest, res: Response, next: NextFunction) => {
   const id = req.user as IUserIdRequest;
 
   Card.findByIdAndRemove(req.params.cardId)
     .then((card) => {
       if (!card) { throw new NotFoundError('Передан несуществующий _id карточки'); }
-      if (String(card.owner) !== String(id)) {
-        res.status(FORBIDDEN).send({ message: 'Вы можете удалить только свои карточки' });
+      // использовала этот метод приведения к строке, он конвертирует объект в строковый объект
+      // других предположений у меня нет как прировнять значения
+      // К сожалению, все карточки создаю я и проверить удаление не могу
+      if (card.owner.toString() !== id.toString()) {
+        throw new ForbiddenError('Вы можете удалить только свои карточки');
       }
       res.send(card);
     })
     .catch((err) => {
       if (err instanceof mongoose.Error.CastError) {
-        return res.status(BAD_REQUEST).send({ message: 'Передан неверный _id карточки' });
+        return next(new BadRequestError('Передан неверный _id карточки'));
       }
-      return res.status(INTERNAL_SERVER_ERROR).send({ message: 'На сервере произошла ошибка' });
+      return next(err);
     });
 };
 
-const putLike = (req: IUserJWTRequest, res: Response) => {
+const putLike = (req: IUserJWTRequest, res: Response, next: NextFunction) => {
   const id = req.user as IUserIdRequest;
 
   Card.findByIdAndUpdate(
@@ -62,13 +65,13 @@ const putLike = (req: IUserJWTRequest, res: Response) => {
     })
     .catch((err) => {
       if (err instanceof mongoose.Error.CastError) {
-        return res.status(BAD_REQUEST).send({ message: 'Переданы некорректные данные для постановки/снятии лайка' });
+        return next(new BadRequestError('Переданы некорректные данные для постановки/снятии лайка'));
       }
-      return res.status(INTERNAL_SERVER_ERROR).send({ message: 'На сервере произошла ошибка' });
+      return next(err);
     });
 };
 
-const deleteLike = (req: IUserJWTRequest, res: Response) => {
+const deleteLike = (req: IUserJWTRequest, res: Response, next: NextFunction) => {
   const id = req.user as IUserIdRequest;
 
   Card.findByIdAndUpdate(
@@ -83,9 +86,9 @@ const deleteLike = (req: IUserJWTRequest, res: Response) => {
     })
     .catch((err) => {
       if (err instanceof mongoose.Error.CastError) {
-        return res.status(BAD_REQUEST).send({ message: 'Переданы некорректные данные для постановки/снятии лайка' });
+        return next(new BadRequestError('Переданы некорректные данные для постановки/снятии лайка'));
       }
-      return res.status(INTERNAL_SERVER_ERROR).send({ message: 'На сервере произошла ошибка' });
+      return next(err);
     });
 };
 

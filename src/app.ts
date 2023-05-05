@@ -1,17 +1,16 @@
-import express, { Request, Response } from 'express';
+import express, { NextFunction, Request, Response } from 'express';
 import mongoose from 'mongoose';
-import { errors, Joi, celebrate } from 'celebrate';
+import { errors } from 'celebrate';
 import cookieParser from 'cookie-parser';
-import userRouter from './routes/userRouter';
-import cardRouter from './routes/cardRouter';
-import { NOT_FOUND } from './utils/constants';
+import { userRouter, cardRouter } from './routes/index';
+import { INTERNAL_SERVER_ERROR } from './utils/constants';
 import { login, createUser } from './controllers/user';
 import auth from './middlewares/auth';
 import { errorLogger, requestLogger } from './middlewares/logger';
+import { signinValidator, signupValidator } from './validation/JoiValidator';
+import NotFoundError from './errors/not-found';
 
 const { PORT = 3000 } = process.env;
-
-// GET /users/me — не возвращает информацию о текущем пользователе.
 
 const app = express();
 
@@ -23,28 +22,14 @@ mongoose.connect('mongodb://localhost:27017/mestodb');
 
 app.use(requestLogger); // подключаем логер запросов
 
-app.post('/signin', celebrate({
-  body: Joi.object().keys({
-    email: Joi.string().required().email(),
-    password: Joi.string().required().pattern(/^[a-zA-Z0-9]{3,30}$/),
-  }),
-}), login);
-
-app.post('/signup', celebrate({
-  body: Joi.object().keys({
-    name: Joi.string().min(2).max(30).rule({ message: 'Именя должна быть от 2 до 30 символов' }),
-    email: Joi.string().required().email(),
-    password: Joi.string().required().pattern(/^[a-zA-Z0-9]{3,30}$/),
-    about: Joi.string().min(2).max(200).rule({ message: 'Введите от 2 до 30 символов' }),
-    avatar: Joi.string(),
-  }),
-}), createUser);
+app.post('/signin', signinValidator, login);
+app.post('/signup', signupValidator, createUser);
 
 app.use(auth);
 app.use('/users', userRouter);
 app.use('/cards', cardRouter);
-app.get('*', (req: Request, res: Response) => {
-  res.status(NOT_FOUND).send('Страница не найдена');
+app.get('*', (req: Request, res: Response, next: NextFunction) => {
+  next(new NotFoundError('Страница не найдена'));
 });
 
 app.use(errorLogger); // подключаем логер ошибок
@@ -53,12 +38,12 @@ app.use(errors()); // обработчик ошибок celebrate
 
 // централизованный обработчик
 app.use((
-  err: { statusCode: number; message: any; },
+  err: { statusCode: number; message: string; },
   _req: Request,
   res: Response,
 ) => {
   res.status(err.statusCode).send({
-    message: err.statusCode === 500
+    message: err.statusCode === INTERNAL_SERVER_ERROR
       ? 'На сервере произошла ошибка'
       : err.message,
   });
