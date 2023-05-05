@@ -1,21 +1,21 @@
 import mongoose from 'mongoose';
-import { Request, Response } from 'express';
+import { NextFunction, Request, Response } from 'express';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
+import BadRequestError from '../errors/bad-request';
+import ConflictError from '../errors/conflict';
 import { IUser, IUserJWTRequest, IUserIdRequest } from '../types';
 import User from '../models/user';
-import NotFoundError from '../errors/not-found-err';
-import {
-  BAD_REQUEST, INTERNAL_SERVER_ERROR, CREATED, UNAUTHORIZED, OK, CONFLICT, randomString,
-} from '../utils/constants';
+import NotFoundError from '../errors/not-found';
+import { CREATED, randomString } from '../utils/constants';
 
-const getAllUsers = (req: IUserJWTRequest, res: Response) => {
+const getAllUsers = (req: IUserJWTRequest, res: Response, next: NextFunction) => {
   User.find({})
     .then((users) => res.send(users))
-    .catch(() => res.status(INTERNAL_SERVER_ERROR).send({ message: 'На сервере произошла ошибка' }));
+    .catch((err) => next(err));
 };
 
-const getUserById = (req: IUserJWTRequest, res: Response) => {
+const getUserById = (req: IUserJWTRequest, res: Response, next: NextFunction) => {
   User.findById(req.params.userId)
     .then((user) => {
       if (!user) { throw new NotFoundError('Пользователь по указанному _id не найден'); }
@@ -23,13 +23,13 @@ const getUserById = (req: IUserJWTRequest, res: Response) => {
     })
     .catch((err) => {
       if (err instanceof mongoose.Error.CastError) {
-        return res.status(BAD_REQUEST).send({ message: 'Переданы некорректный _id пользователя' });
+        return next(new BadRequestError('Переданы некорректный _id пользователя'));
       }
-      return res.status(INTERNAL_SERVER_ERROR).send({ message: 'На сервере произошла ошибка' });
+      return next(err);
     });
 };
 
-const createUser = (req: Request, res: Response) => {
+const createUser = (req: Request, res: Response, next: NextFunction) => {
   const {
     name, about, avatar, email, password,
   } = req.body;
@@ -42,19 +42,24 @@ const createUser = (req: Request, res: Response) => {
       email,
       password: hash,
     }))
-    .then((user: IUser) => res.status(CREATED).send(user))
+    .then((user: IUser) => res.status(CREATED).send({
+      name: user.name,
+      about: user.about,
+      avatar: user.avatar,
+      email: user.email,
+    }))
     .catch((err) => {
       if (err instanceof mongoose.Error.ValidationError) {
-        return res.status(BAD_REQUEST).send({ message: 'Переданы некорректные данные при создании пользователя' });
+        return next(new BadRequestError('Переданы некорректные данные при создании пользователя'));
       }
       if (err.code === 1100) {
-        return res.status(CONFLICT).send({ message: 'Пользователь с указанным логином уже существует' });
+        return next(new ConflictError('Пользователь с указанным логином уже существует'));
       }
-      return res.status(INTERNAL_SERVER_ERROR).send({ message: 'На сервере произошла ошибка' });
+      return next(err);
     });
 };
 
-const editProfile = (req: IUserJWTRequest, res: Response) => { //
+const editProfile = (req: IUserJWTRequest, res: Response, next: NextFunction) => {
   const { name, about } = req.body;
   const id = req.user as IUserIdRequest;
 
@@ -69,13 +74,13 @@ const editProfile = (req: IUserJWTRequest, res: Response) => { //
     })
     .catch((err) => {
       if (err instanceof mongoose.Error.ValidationError) {
-        return res.status(BAD_REQUEST).send({ message: 'Переданы некорректные данные при обновлении профиля' });
+        return next(new BadRequestError('Переданы некорректные данные при обновлении профиля'));
       }
-      return res.status(INTERNAL_SERVER_ERROR).send({ message: 'На сервере произошла ошибка' });
+      return next(err);
     });
 };
 
-const editAvatar = (req: IUserJWTRequest, res: Response) => {
+const editAvatar = (req: IUserJWTRequest, res: Response, next: NextFunction) => {
   const { avatar } = req.body;
   const id = req.user as IUserIdRequest;
 
@@ -90,35 +95,30 @@ const editAvatar = (req: IUserJWTRequest, res: Response) => {
     })
     .catch((err) => {
       if (err instanceof mongoose.Error.ValidationError) {
-        return res.status(BAD_REQUEST).send({ message: 'Переданы некорректные данные при обновлении аватара' });
+        return next(new BadRequestError('Переданы некорректные данные при обновлении аватара'));
       }
-      return res.status(INTERNAL_SERVER_ERROR).send({ message: 'На сервере произошла ошибка' });
+      return next(err);
     });
 };
 
-const login = (req: Request, res: Response) => {
+const login = (req: Request, res: Response, next: NextFunction) => {
   const { email, password } = req.body;
 
   return User.findUserByCredentials(email, password)
     .then((user) => {
-      if (!user) {
-        return res.status(UNAUTHORIZED).send({ message: 'Неверный пароль или логин' });
-      }
-
       const token = jwt.sign(
         { _id: user._id },
         randomString,
         { expiresIn: '7d' },
       );
-      res.cookie('token', token, { expires: new Date(Date.now() + 900000), httpOnly: true });
-      return res.status(OK).send(token);
+      // Если я правильно поняла, то здесь нужно выбрать один из вариантов отправки токена
+      return res.cookie('token', token, { expires: new Date(Date.now() + 900000), httpOnly: true });
+      // return res.send(token);
     })
-    .catch(() => {
-      res.status(INTERNAL_SERVER_ERROR).send({ message: 'На сервере произошла ошибка' });
-    });
+    .catch((err) => next(err));
 };
 
-const getCurrentUser = (req: IUserJWTRequest, res: Response) => {
+const getCurrentUser = (req: IUserJWTRequest, res: Response, next: NextFunction) => {
   const id = req.user as IUserIdRequest;
 
   User.findById(id)
@@ -126,12 +126,7 @@ const getCurrentUser = (req: IUserJWTRequest, res: Response) => {
       if (!user) { throw new NotFoundError('Пользователь не найден'); }
       res.send(user);
     })
-    .catch((err) => {
-      if (err instanceof mongoose.Error.CastError) {
-        return res.status(BAD_REQUEST).send({ message: 'Переданы некорректный _id пользователя' });
-      }
-      return res.status(INTERNAL_SERVER_ERROR).send({ message: 'На сервере произошла ошибка' });
-    });
+    .catch((err) => next(err));
 };
 
 export {
