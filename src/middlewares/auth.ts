@@ -9,7 +9,7 @@ export default (req: IUserJWTRequest, res: Response, next: NextFunction) => {
   const cookie = req.cookies.token;
 
   if (!cookie) {
-    next(new UnauthorizedError('Необходима авторизироваться'));
+    return next(new UnauthorizedError('Необходима авторизироваться'));
   }
 
   let payload;
@@ -17,7 +17,7 @@ export default (req: IUserJWTRequest, res: Response, next: NextFunction) => {
   try {
     payload = jwt.verify(cookie, randomString);
   } catch {
-    next(new UnauthorizedError('Необходима авторизироваться'));
+    return next(new UnauthorizedError('Необходима авторизироваться'));
   }
   req.user = payload; // записываем пейлоуд в объект запроса
 

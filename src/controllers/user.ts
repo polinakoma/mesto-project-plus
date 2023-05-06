@@ -111,9 +111,11 @@ const login = (req: Request, res: Response, next: NextFunction) => {
         randomString,
         { expiresIn: '7d' },
       );
-      // Если я правильно поняла, то здесь нужно выбрать один из вариантов отправки токена
-      return res.cookie('token', token, { expires: new Date(Date.now() + 900000), httpOnly: true });
-      // return res.send(token);
+      return res.cookie(
+        'token',
+        token,
+        { expires: new Date(Date.now() + 900000), httpOnly: true },
+      ).send('Вы успешно авторизированы');
     })
     .catch((err) => next(err));
 };

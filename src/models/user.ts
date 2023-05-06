@@ -3,7 +3,7 @@ import validator from 'validator';
 import bcrypt from 'bcryptjs';
 import { IUser } from '../types';
 import { URL_REGEXP } from '../utils/constants';
-import BadRequestError from '../errors/bad-request';
+import UnauthorizedError from '../errors/unathorized';
 
 interface UserModel extends mongoose.Model<IUser> {
   // eslint-disable-next-line no-unused-vars
@@ -56,12 +56,12 @@ userSchema.static('findUserByCredentials', function findUserByCredentials(email,
   return this.findOne({ email }).select('+password')
     .then((user: IUser) => {
       if (!user) {
-        return Promise.reject(new BadRequestError('Неправильные почта или пароль'));
+        return Promise.reject(new UnauthorizedError('Неправильные почта или пароль'));
       }
       return bcrypt.compare(password, user.password)
         .then((matched: boolean) => {
           if (!matched) {
-            return Promise.reject(new BadRequestError('Неправильные почта или пароль'));
+            return Promise.reject(new UnauthorizedError('Неправильные почта или пароль'));
           }
           return user;
         });
