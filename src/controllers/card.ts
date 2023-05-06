@@ -31,12 +31,10 @@ const getAllCards = (req: Request, res: Response, next: NextFunction) => {
 const deleteCardById = (req: IUserJWTRequest, res: Response, next: NextFunction) => {
   const id = req.user as IUserIdRequest;
 
-  Card.findByIdAndRemove(req.params.cardId)
+  // надеюсь, я попала в правильный метод
+  Card.findByIdAndDelete(req.params.cardId)
     .then((card) => {
       if (!card) { throw new NotFoundError('Передан несуществующий _id карточки'); }
-      // использовала этот метод приведения к строке, он конвертирует объект в строковый объект
-      // других предположений у меня нет как прировнять значения
-      // К сожалению, все карточки создаю я и проверить удаление не могу
       if (card.owner.toString() !== id.toString()) {
         throw new ForbiddenError('Вы можете удалить только свои карточки');
       }
