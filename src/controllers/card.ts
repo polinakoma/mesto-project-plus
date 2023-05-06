@@ -31,8 +31,7 @@ const getAllCards = (req: Request, res: Response, next: NextFunction) => {
 const deleteCardById = (req: IUserJWTRequest, res: Response, next: NextFunction) => {
   const id = req.user as IUserIdRequest;
 
-  // надеюсь, я попала в правильный метод
-  Card.findByIdAndDelete(req.params.cardId)
+  Card.findById(req.params.cardId)
     .then((card) => {
       if (!card) { throw new NotFoundError('Передан несуществующий _id карточки'); }
       if (card.owner.toString() !== id.toString()) {
