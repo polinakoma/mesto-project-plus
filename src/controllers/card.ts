@@ -38,8 +38,8 @@ const deleteCardById = (req: IUserJWTRequest, res: Response, next: NextFunction)
         throw new ForbiddenError('Вы можете удалить только свои карточки');
       } else {
         card.delete();
-        res.send(card);
       }
+      res.send(card);
     })
     .catch((err) => {
       if (err instanceof mongoose.Error.CastError) {
