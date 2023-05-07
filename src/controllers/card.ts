@@ -36,8 +36,10 @@ const deleteCardById = (req: IUserJWTRequest, res: Response, next: NextFunction)
       if (!card) { throw new NotFoundError('Передан несуществующий _id карточки'); }
       if (card.owner.toString() !== id.toString()) {
         throw new ForbiddenError('Вы можете удалить только свои карточки');
+      } else {
+        card.delete();
+        res.send(card);
       }
-      res.send(card);
     })
     .catch((err) => {
       if (err instanceof mongoose.Error.CastError) {
